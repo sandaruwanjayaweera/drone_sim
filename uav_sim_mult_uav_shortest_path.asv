@@ -12,12 +12,9 @@ t_down          = 0.1*t_full;
 t_refill        = 0.25*t_full;
 charge_rate     = 40; % 0.25;
 
-technology      = 'lte-v2x'; % {'lte-v2x', '5gnr', '11p', '11bd', 'ble-1m', 'ble-2m', 'ble-coded'}
+technology      = 'lte'; % {'lte-v2x', '5gnr', '11p', '11bd', 'ble'}
 
-req_count       = 2; % the most probable DENM message count during simulation
-iter_count      = (t_full-t_req)*req_count+1;
-
-drone_sim(N_uav, altitude, speed, t_full, t_req, t_bs, t_down, t_refill, charge_rate, technology, iter_count);
+drone_sim(N_uav, altitude, speed, t_full, t_req, t_bs, t_down, t_refill, charge_rate, technology);
 
 function drone_sim( N_uav, ...          % number of UAVs
                     altitude, ...       % altitude of UAVs
@@ -27,9 +24,7 @@ function drone_sim( N_uav, ...          % number of UAVs
                     t_bs, ...           % time remaining when starting to move towards BS
                     t_down, ...         % time remaining when drone lands and stays down
                     t_refill, ...       % time taken to refill
-                    charge_rate, ...    % charge rate
-                    technology, ...     % carrier technology
-                    iter_count ...      % no of iterations in simulation
+                    charge_rate ...    % charge rate
                     )
 
     d_in_range          = 10;
@@ -39,28 +34,21 @@ function drone_sim( N_uav, ...          % number of UAVs
     switch technology
         case 'lte-v2x'
             fc              = 5.9e9;
-            rx_sensitivity  = -90.4;    % ETSI TR 103 688 
+            rx_sensitivity  = -90.4; % ETSI TR 103 688 
         case '5gnr'
             fc              = 5.9e9;
-            rx_sensitivity  = -92.5;    % ETSI TR 103 688 
+            rx_sensitivity  = -92.5; % ETSI TR 103 688 
         case '11p'
             fc              = 5.9e9;
-            rx_sensitivity  = -98;      % ETSI TR 103 688 
+            rx_sensitivity  = -98; % ETSI TR 103 688 
         case '11bd'
             fc              = 5.9e9;
             rx_sensitivity  = -98;
-        case 'ble-1m'
+        case 'ble-'
             fc              = 2.4e9;
-            rx_sensitivity  = -93;      % 1m receiver sensitivity dBm (nRF52840 dongle) https://infocenter.nordicsemi.com/index.jsp?topic=%2Fps_nrf52840%2Fradio.html&cp=4_0_0_5_19_14_8&anchor=unique_1927333262 (PSENS,IT,LP,1M,BLE)
-        case 'ble-2m'
-            fc              = 2.4e9;
-            rx_sensitivity  = -89;      % 2m
-        case 'ble-coded'
-            fc              = 2.4e9;
-            rx_sensitivity  = -103;     % coded
+            rx_sensitivity  = -103; % coded
         otherwise
-            fc              = 5.9e9;
-            rx_sensitivity  = -90.4;    % use lte-v2x by default
+            
     end
 
     buildingsgeo    = readgeotable("university.osm",CoordinateSystemType="geographic"); %readgeotable("linnanmaa.osm",Layer="buildings");
@@ -345,7 +333,8 @@ function drone_sim( N_uav, ...          % number of UAVs
     cm = parula(N_uav);
     
     idx = 0;
-    while idx < iter_count        
+    req_count       = 5; % the most probable DENM message count during simulation
+    while idx < (t_full-t_req)*req_count+1          
         idx             = idx + 1;
         waypoint_idx    = waypoint_idx + 1;
         speed_idx       = speed_idx + 1;
@@ -675,7 +664,7 @@ function drone_sim( N_uav, ...          % number of UAVs
                 plot([1:length(rssrt{uav_id})], rssrt{uav_id}, '-', 'Color', cm(uav_id,:), 'DisplayName', string("RSS RT uav " +uav_id));
             end
         end
-        yline(rx_sensitivity, '-', 'DisplayName', 'Rx Sensitivity', 'LineWidth', 1);
+        yline(rx_sensitivity, '-', 'DisplayName', 'Rx sensitivity', 'LineWidth', 1);
         hold off
         legend()
         % xlim([0 360]); ylim([-80 -20])
